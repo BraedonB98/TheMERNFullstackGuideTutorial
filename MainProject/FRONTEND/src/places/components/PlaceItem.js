@@ -24,7 +24,8 @@ const PlaceItem = props => {
         setShowConfirmModal(false);
     }
     const confirmDeleteHandler = () =>{
-        console.log("You just got deleted!!!! BOOM")
+        setShowConfirmModal(false)
+        console.log("You just got deleted!!!! BOOM");
     };
 
     return(
@@ -42,12 +43,14 @@ const PlaceItem = props => {
                 </div>
             </Modal>
             <Modal 
+                show = {showConfirmModal}
+                onCancel = {cancelDeleteHandler}
                 header = "Are you sure?"
                 footerClass = "place-item__modal-actions" 
                 footer = {
                     <React.Fragment>
-                        <Button inverse>CANCEL</Button>
-                        <Button danger>DELETE</Button>
+                        <Button inverse onClick={cancelDeleteHandler}>CANCEL</Button>
+                        <Button danger onClick={confirmDeleteHandler}>DELETE</Button>
                     </React.Fragment>
                 } >
                     <p>Are you sure you want to delete this place?</p>
@@ -65,7 +68,7 @@ const PlaceItem = props => {
         <div className="place-item__actions">
             <Button inverse onClick={openMapHandler}>VIEW ON MAP</Button>
             <Button to={`/places/${props.id}`}>EDIT</Button>
-            <Button danger>DELETE</Button>
+            <Button danger onClick = {showDeleteWarningHandler}>DELETE</Button>
         </div>
         </Card>
     </li>
