@@ -7,13 +7,13 @@ const inputReducer = (state, action) =>{
     switch (action.type){
         case 'CHANGE':
             return{
-                ...state, //this save all previous properties then all following properties are overwriten
+                ...state, //this save all previous properties then all following properties are over written
                 value: action.val,
                 isValid: validate(action.val, action.validators)
             };
         case 'TOUCH':
             return{
-                ...state, //this save all previous properties then all following properties are overwriten
+                ...state, //this save all previous properties then all following properties are over written
                 isTouched:true
             };
         default:
