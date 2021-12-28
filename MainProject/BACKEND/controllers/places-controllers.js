@@ -1,5 +1,8 @@
 const { v4: uuid } = require('uuid');
+const {validationResult} = require('express-validator');
+
 const HttpError = require('../models/http-error');
+const getCoordsForAddress = require('../util/location');
 
 let DUMMY_PLACES = [
     {
@@ -14,8 +17,8 @@ let DUMMY_PLACES = [
     ,
     {
         id: 'p2',
-        title: 'Grays and Torries Peak',
-        description:'This is an amazing 8.25 mile hike that gains 3600 ft of elevation gain, If you are looking to increase the number of CO 14ers you have summited this is one of the easiest ways to do it',
+        title: 'Grays and Tory Peak',
+        description:'This is an amazing 8.25 mile hike that gains 3600 ft of elevation gain, If you are looking to increase the number of CO 14ers you have summit this is one of the easiest ways to do it',
         imageUrl: 'https://www.14ers.com/photos/graystorreys/routes/rt_torr5.jpg',
         address:'Forest Road 189',
         location:{lat:39.66087 ,lng:-105.78462},
@@ -49,8 +52,23 @@ const getPlacesByUserId = (req,res,next)=>{
     res.json({places}); // = res.json({place: place});
 }
 
-const createPlace = (req, res, next) => {
-    const {title,description,coordinates,address,creator} = req.body;
+const createPlace = async (req, res, next) => {
+    const errors = validationResult(req);
+    if(!errors.isEmpty())
+    {
+        return(next(new HttpError('Invalid Inputs Passed Please try again', 422)))
+    }
+
+
+    const {title,description,address,creator} = req.body;
+
+    let coordinates; // if you declare in try catch block then its local and cant leave try block
+    try{coordinates = await getCoordsForAddress(address);}
+    catch(error){
+        return(next(error));
+    }
+    
+
 
     const createdPlace = {
         id: uuid(),
@@ -67,6 +85,11 @@ const createPlace = (req, res, next) => {
 };
 
 const updatePlace = (req,res,next)=>{
+    const errors = validationResult(req);
+    if(!errors.isEmpty())
+    {
+        return(next(new HttpError('Invalid Inputs Passed Please try again', 422)))
+    }
     const {title,description} = req.body;
     const placeId = req.params.pid;
 
@@ -81,6 +104,9 @@ const updatePlace = (req,res,next)=>{
 };
 const deletePlace = (req,res,next)=>{
     const placeId = req.params.pid;
+    if(!DUMMY_PLACES.find(p => p.id === placeId)){
+        return(next(new HttpError('No place found with that ID', 404)))
+    }
     DUMMY_PLACES = DUMMY_PLACES.filter(p => p.id!==placeId);
     res.status(200).json({message: 'Deleted place'})
 };
