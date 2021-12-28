@@ -1,8 +1,11 @@
-const { v4: uuid } = require('uuid');
+const mongoose = require('mongoose');
+
 const {validationResult} = require('express-validator');
+
 
 const HttpError = require('../models/http-error');
 const getCoordsForAddress = require('../util/location');
+const Place = require('../models/place');
 
 let DUMMY_PLACES = [
     {
@@ -28,29 +31,39 @@ let DUMMY_PLACES = [
 
 
 
-const getPlaceById = (req,res,next)=>{
+const getPlaceById = async (req,res,next)=>{
     const placeId = req.params.pid; // because pid was used in the get /:pid this is the {pid: 'p1'}
-    const place = DUMMY_PLACES.find(p => {
-        return p.id === placeId;
-    });
-    if(!place){
-        return next(new HttpError('Could not find a place for the provided id.', 404));
+    let place;
+    try{
+        place = await Place.findById(placeId);
     }
+    catch(error){
+        return(next(new HttpError('Could not find place in database', 500)));
+    };
+    if(!place){
+        return(next(new HttpError('Place not in database', 404)));
+    }
+   
 
-    res.json({place}); // = res.json({place: place});
-}
+    res.json({place: place.toObject({getters:true})}); // = res.json({place: place}); //getters:true allows you to refer to _id by id
+};
 
-const getPlacesByUserId = (req,res,next)=>{
+const getPlacesByUserId = async (req,res,next)=>{
     const userId = req.params.uid; // because uid was used in the get /:uid this is the {uid: 'p1'}
-    const places = DUMMY_PLACES.filter(p => {
-        return p.creator === userId;
-    });
+    let places;
+    try{
+        places = await Place.find({creator:userId});
+    }
+    catch(error){
+        return(next(new HttpError('Could not find place in database', 500)));
+    };
+
     if(!places || places.length === 0){
         return next(new HttpError('Could not find a places for the provided user id.', 404));
     }
 
-    res.json({places}); // = res.json({place: place});
-}
+    res.json({places: places.map(place => place.toObject({getters:true}))}); // = res.json({place: place});
+};
 
 const createPlace = async (req, res, next) => {
     const errors = validationResult(req);
@@ -70,21 +83,27 @@ const createPlace = async (req, res, next) => {
     
 
 
-    const createdPlace = {
-        id: uuid(),
+    const createdPlace = new Place({
         title,
         description,
         location: coordinates,
         address,
+        imageUrl:'https://www.14ers.com/photos/graystorreys/routes/rt_torr5.jpg',
         creator
+    });
+  
+    try{
+        await createdPlace.save();
+    }
+    catch(error){
+        return(next(new HttpError('Creating place failed',500)));
     };
-
-    DUMMY_PLACES.push(createdPlace); 
+    
 
     res.status(201).json({place: createdPlace})
 };
 
-const updatePlace = (req,res,next)=>{
+const updatePlace = async (req,res,next)=>{
     const errors = validationResult(req);
     if(!errors.isEmpty())
     {
@@ -93,21 +112,45 @@ const updatePlace = (req,res,next)=>{
     const {title,description} = req.body;
     const placeId = req.params.pid;
 
-    const updatedPlace = {...DUMMY_PLACES.find(p => p.id ===placeId)};
-    const placeIndex = DUMMY_PLACES.findIndex(p => p.id ===placeId);
-    updatedPlace.title = title;
-    updatedPlace.description = description;
-    DUMMY_PLACES[placeIndex]= updatedPlace;
+    let place;
+    try{
+        place = await Place.findById(placeId);
+    }
+    catch(error){
+        return(next(new HttpError('Could not find place in database', 500)));
+    };
 
-    res.status(200).json({place: updatedPlace})
+    place.title = title;
+    place.description = description;
+    if(!place){
+        return(next(new HttpError('Place not in database', 404)));
+    }
+
+    try{
+        await place.save();
+    }
+    catch(error){
+        return(next(new HttpError('Could not update place in database', 500)));
+    }
+
+
+    res.status(200).json({place: place.toObject({getters:true})});
 
 };
-const deletePlace = (req,res,next)=>{
+const deletePlace =async (req,res,next)=>{
     const placeId = req.params.pid;
-    if(!DUMMY_PLACES.find(p => p.id === placeId)){
-        return(next(new HttpError('No place found with that ID', 404)))
+    
+    let place;
+    try{
+        place = await Place.findByIdAndDelete(placeId);
     }
-    DUMMY_PLACES = DUMMY_PLACES.filter(p => p.id!==placeId);
+    catch(error){
+        return(next(new HttpError('Could not delete in database', 500)));
+    };
+
+
+
+
     res.status(200).json({message: 'Deleted place'})
 };
 
