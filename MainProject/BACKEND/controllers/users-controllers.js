@@ -19,7 +19,7 @@ const signup = async (req,res,next)=>{
     const errors = validationResult(req);
     if(!errors.isEmpty())
     {
-        return(next(new HttpError('Invalid Inputs Passed Please try again', 422)))
+        return(next(new HttpError('Invalid Inputs Passed found by expressValidator Please try again', 422)))
     }
     const{name, email, password }= req.body;
 
@@ -32,7 +32,7 @@ const signup = async (req,res,next)=>{
     };
 
     if(existingUser){
-        console.log(existingUser);
+        //console.log(existingUser);
         return(next(new HttpError('Could not create user, email already in use'),422));
     }
 
