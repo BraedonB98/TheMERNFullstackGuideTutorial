@@ -3,40 +3,27 @@ import React, {useEffect, useState} from 'react';
 import UsersList from '../components/UsersList';
 import ErrorModal from '../../shared/components/UIElements/ErrorModal';
 import LoadingSpinner from '../../shared/components/UIElements/LoadingSpinner';
+import { useHttpClient } from '../../shared/hooks/http-hook';
+
 const Users = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError]= useState();
+  const{isLoading,error,sendRequest,clearError} = useHttpClient();
   const [loadedUsers, setLoadedUsers]= useState([]);
 
   useEffect(()=>{ //Never use async on use effect call back, create new function in use effect the then call by use effect
-    const sendRequest = async () =>{ 
+    const fetchUsers = async () =>{ 
       try{
-        setIsLoading(true);
-        const response = await fetch('http://localhost:5000/api/users');
-      
-        const responseData = await response.json();
-
-        if(!response.ok){//checks if error code is 4** or 5** error
-          throw new Error(responseData.message);
-        }
-
+        const responseData = await sendRequest('http://localhost:5000/api/users');
         setLoadedUsers(responseData.users);
       }
-      catch(error)
-      {
-        setError(error.message);
-      }
-      setIsLoading(false);
+      catch(error){}
     }
-    sendRequest();
-  },[]) //when array of dependencies is empty, the useEffect will never rerun because dependencies never change
+    fetchUsers();
+  },[sendRequest]) //when array of dependencies is empty, the useEffect will never rerun because dependencies never change
   
-  const errorHandler = () =>{
-    setError(null);
-  }
+
   return (
   <reactFragment>
-    <ErrorModal error = {error} onClear = {errorHandler}/>
+    <ErrorModal error = {error} onClear = {clearError}/>
     {isLoading && 
     <div className='center'>
       <LoadingSpinner/>

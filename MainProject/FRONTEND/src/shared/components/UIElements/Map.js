@@ -1,4 +1,4 @@
-import React , { useEffect, useRef , userEffect } from 'react';
+import React , { useEffect, useRef} from 'react';
 
 import './Map.css';
 
