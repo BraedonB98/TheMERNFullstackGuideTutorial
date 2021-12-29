@@ -3,18 +3,16 @@ const {validationResult} = require('express-validator');
 const HttpError = require('../models/http-error');
 const User = require('../models/user');
 
-const DUMMY_USERS = [
+const getUsers = async (req,res,next)=>{
+    let users;
+    try{
+        users= await User.find({}, '-password');//isnt this going to be a massive array for any real social media website. obviously for this small project demonstration its fine but in future might be good to find a better way
+    } 
+    catch(error)
     {
-        id: 'u1',
-        name: 'Braedon',
-        email: 'email@email.com',
-        password: 'password'
+        return(next(new HttpError('Failed to get Users, Please try again', 500)))
     }
-]
-
-
-const getUsers = (req,res,next)=>{
-    
+    res.json({users: users.map(user=>user.toObject({getters:true}))})
 };
 
 const signup = async (req,res,next)=>{
@@ -23,7 +21,7 @@ const signup = async (req,res,next)=>{
     {
         return(next(new HttpError('Invalid Inputs Passed Please try again', 422)))
     }
-    const{name, email, password ,places}= req.body;
+    const{name, email, password }= req.body;
 
     let existingUser;
     try{
@@ -43,7 +41,7 @@ const signup = async (req,res,next)=>{
         email,
         password,
         imageUrl: 'https://www.14ers.com/photos/graystorreys/routes/rt_torr5.jpg',
-        places
+        places:[]
     });
     
     try{

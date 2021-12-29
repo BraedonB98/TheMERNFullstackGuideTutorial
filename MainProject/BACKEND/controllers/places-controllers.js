@@ -6,28 +6,7 @@ const {validationResult} = require('express-validator');
 const HttpError = require('../models/http-error');
 const getCoordsForAddress = require('../util/location');
 const Place = require('../models/place');
-
-let DUMMY_PLACES = [
-    {
-        id: 'p1',
-        title: 'Empires State Building',
-        description:'One of the most famous sky scrapers in the world!',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/NYC_Empire_State_Building.jpg/640px-NYC_Empire_State_Building.jpg',
-        address:'20 W 34th St',
-        location:{lat:40.7484474 ,lng:-73.9871516},
-        creator:'u1'
-    }
-    ,
-    {
-        id: 'p2',
-        title: 'Grays and Tory Peak',
-        description:'This is an amazing 8.25 mile hike that gains 3600 ft of elevation gain, If you are looking to increase the number of CO 14ers you have summit this is one of the easiest ways to do it',
-        imageUrl: 'https://www.14ers.com/photos/graystorreys/routes/rt_torr5.jpg',
-        address:'Forest Road 189',
-        location:{lat:39.66087 ,lng:-105.78462},
-        creator:'u2'
-        }
-]
+const User = require('../models/user');
 
 
 
@@ -50,19 +29,20 @@ const getPlaceById = async (req,res,next)=>{
 
 const getPlacesByUserId = async (req,res,next)=>{
     const userId = req.params.uid; // because uid was used in the get /:uid this is the {uid: 'p1'}
-    let places;
+    //let places;
+    let userWithPlaces
     try{
-        places = await Place.find({creator:userId});
+        userWithPlaces = await User.findById(userId).populate('places');
     }
     catch(error){
         return(next(new HttpError('Could not find place in database', 500)));
     };
 
-    if(!places || places.length === 0){
+    if(!userWithPlaces || userWithPlaces.places.length === 0){
         return next(new HttpError('Could not find a places for the provided user id.', 404));
     }
 
-    res.json({places: places.map(place => place.toObject({getters:true}))}); // = res.json({place: place});
+    res.json({places: userWithPlaces.places.map(place => place.toObject({getters:true}))}); // = res.json({place: place});
 };
 
 const createPlace = async (req, res, next) => {
@@ -92,8 +72,26 @@ const createPlace = async (req, res, next) => {
         creator
     });
   
+    let user;
+
     try{
-        await createdPlace.save();
+        user= await User.findById(creator);
+    }
+    catch(error){
+        return(next(new HttpError('Creating place failed, issue accessing DB', 500)))
+    }
+
+    if(!user){
+        return(next(new HttpError('Creating place failed, UserID not able to be located in DB', 404)))
+    }
+
+    try{
+        const sess = await mongoose.startSession();
+        sess.startTransaction();//transactions allow you to perform multiple actions on a db where if one fails it reverts back to state before any operations performed
+        await createdPlace.save({session:sess}); 
+        user.places.push(createdPlace);
+        await user.save({session:sess});
+        sess.commitTransaction();//kinda like pushing in git. The commits are changes from the version that you started with but until you push it isnt updated so no harm no foul if something fails
     }
     catch(error){
         return(next(new HttpError('Creating place failed',500)));
@@ -141,10 +139,20 @@ const deletePlace =async (req,res,next)=>{
     const placeId = req.params.pid;
     
     let place;
+    let creator;
     try{
-        place = await Place.findByIdAndDelete(placeId);
+        const sess = await mongoose.startSession();
+        sess.startTransaction();//transactions allow you to perform multiple actions on a db where if one fails it reverts back to state before any operations performed
+        place = await Place.findByIdAndRemove(placeId , {session:sess});
+        creator = await User.findById(place.creator.toString());
+        //console.log(creator);
+        creator.places.pull(place.id.toString());
+        await creator.save({session:sess});
+        await sess.commitTransaction();//kinda like pushing in git. The commits are changes from the version that you started with but until you push it isnt updated so no harm no foul if something fails
     }
     catch(error){
+        //console.log(place);
+        //console.log(error);
         return(next(new HttpError('Could not delete in database', 500)));
     };
 
