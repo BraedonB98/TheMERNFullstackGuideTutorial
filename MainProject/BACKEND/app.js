@@ -17,7 +17,7 @@ app.use(bodyParser.json());
 app.use((req,res,next) => {
     res.setHeader('Access-Control-Allow-Origin','*');//Access-control-Allow-Origin required to let browser use api, the the * can be replaced by urls (for the browser) that are allowed to use it
     res.setHeader('Access-Control-Allow-Headers','Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, Post, Patch, Delete')//Second values are what types of requests you want to accept
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE')//Second values are what types of requests you want to accept
     next();
 });
 

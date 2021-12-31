@@ -49,15 +49,15 @@ const createPlace = async (req, res, next) => {
     const errors = validationResult(req);
     if(!errors.isEmpty())
     {
-        return(next(new HttpError('Invalid Inputs Passed Please try again', 422)))
+        return(next(new HttpError('Invalid Inputs Passed Please try again', 422)));
     }
 
 
     const {title,description,address,creator} = req.body;
-
     let coordinates; // if you declare in try catch block then its local and cant leave try block
     try{coordinates = await getCoordsForAddress(address);}
     catch(error){
+        //console.log('google not working');
         return(next(error));
     }
     
@@ -83,16 +83,27 @@ const createPlace = async (req, res, next) => {
         return(next(new HttpError('Creating place failed, UserID not able to be located in DB', 404)))
     }
 
+    
     try{
         const sess = await mongoose.startSession();
         sess.startTransaction();//transactions allow you to perform multiple actions on a db where if one fails it reverts back to state before any operations performed
         await createdPlace.save({session:sess}); 
         user.places.push(createdPlace);
-        await user.save({session:sess});
-        sess.commitTransaction();//kinda like pushing in git. The commits are changes from the version that you started with but until you push it isnt updated so no harm no foul if something fails
+        console.log("here");
+        
+        console.log(user);
+        try{
+            await user.save({session:sess});}
+        catch(error)
+            {
+                console.log(error);
+                return(next(new HttpError('issue with user save',500)));
+            }
+        await sess.commitTransaction();//kinda like pushing in git. The commits are changes from the version that you started with but until you push it isnt updated so no harm no foul if something fails
     }
     catch(error){
-        return(next(new HttpError('Creating place failed',500)));
+        
+        return(next(new HttpError('Creating place failed Line 95',500)));
     };
     
 
@@ -137,24 +148,35 @@ const deletePlace =async (req,res,next)=>{
     const placeId = req.params.pid;
     
     let place;
-    let creator;
-    try{
-        const sess = await mongoose.startSession();
-        sess.startTransaction();//transactions allow you to perform multiple actions on a db where if one fails it reverts back to state before any operations performed
-        place = await Place.findByIdAndRemove(placeId , {session:sess});
-        creator = await User.findById(place.creator.toString());
-        //console.log(creator);
-        creator.places.pull(place.id.toString());
-        await creator.save({session:sess});
-        await sess.commitTransaction();//kinda like pushing in git. The commits are changes from the version that you started with but until you push it isnt updated so no harm no foul if something fails
-    }
-    catch(error){
-        //console.log(place);
-        //console.log(error);
-        return(next(new HttpError('Could not delete in database', 500)));
-    };
+  try {
+    place = await Place.findById(placeId).populate('creator');
+  } catch (err) {
+    const error = new HttpError(
+      'Something went wrong, could not delete place.',
+      500
+    );
+    return next(error);
+  }
 
+  if (!place) {
+    const error = new HttpError('Could not find place for this id.', 404);
+    return next(error);
+  }
 
+  try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    await place.remove({session: sess});
+    place.creator.places.pull(place);
+    await place.creator.save({session: sess});
+    await sess.commitTransaction();
+  } catch (err) {
+    const error = new HttpError(
+      'Something went wrong, could not delete place.',
+      500
+    );
+    return next(error);
+  }
 
 
     res.status(200).json({message: 'Deleted place'})
