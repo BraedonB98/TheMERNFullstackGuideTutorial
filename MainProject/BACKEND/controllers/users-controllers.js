@@ -40,7 +40,7 @@ const signup = async (req,res,next)=>{
         name,
         email,
         password,
-        imageUrl: 'https://www.14ers.com/photos/graystorreys/routes/rt_torr5.jpg',
+        imageUrl: req.file.path,
         places:[]
     });
     
