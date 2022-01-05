@@ -23,14 +23,14 @@ const Users = () => {
   
 
   return (
-  <reactFragment>
+  <React.Fragment>
     <ErrorModal error = {error} onClear = {clearError}/>
     {isLoading && 
     <div className='center'>
       <LoadingSpinner/>
       </div>}
     {!isLoading && loadedUsers && <UsersList items={loadedUsers} />}
-  </reactFragment>);
+  </React.Fragment>);
 };
 
 export default Users;
