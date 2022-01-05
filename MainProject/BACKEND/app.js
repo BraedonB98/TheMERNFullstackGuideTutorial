@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path') //required for express static path for file accessing
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -15,6 +16,8 @@ const url = `mongodb+srv://BraedonB98:${MongoPassword}@cluster0.webvv.mongodb.ne
 const app = express();
 
 app.use(bodyParser.json());
+
+app.use('/uploads/images', express.static(path.join('uploads','images')));//express.static(path)
 
 app.use((req,res,next) => {
     res.setHeader('Access-Control-Allow-Origin','*');//Access-control-Allow-Origin required to let browser use api, the the * can be replaced by urls (for the browser) that are allowed to use it
