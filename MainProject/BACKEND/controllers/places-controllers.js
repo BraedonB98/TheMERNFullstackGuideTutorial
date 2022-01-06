@@ -1,3 +1,4 @@
+//!if you select upload image after already selecting image and you dont reselect image it crashes because it cant find path
 const fs = require('fs');
 const mongoose = require('mongoose');
 const {validationResult} = require('express-validator');
@@ -91,7 +92,7 @@ const createPlace = async (req, res, next) => {
         user.places.push(createdPlace);
         console.log("here");
         
-        console.log(user);
+        //console.log(user);
         try{
             await user.save({session:sess});}
         catch(error)
@@ -162,7 +163,7 @@ const deletePlace =async (req,res,next)=>{
     const error = new HttpError('Could not find place for this id.', 404);
     return next(error);
   }
-  const imagePath =  place.image;
+  const imagePath =  place.imageUrl;
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
@@ -177,6 +178,7 @@ const deletePlace =async (req,res,next)=>{
     );
     return next(error);
   }
+  console.log("attempting to delete" + imagePath) 
   fs.unlink(imagePath, err => {
       console.log(err);
   });
