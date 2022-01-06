@@ -1,5 +1,5 @@
+const fs = require ('fs');
 const mongoose = require('mongoose');
-
 const {validationResult} = require('express-validator');
 
 
@@ -66,7 +66,7 @@ const createPlace = async (req, res, next) => {
         description,
         location: coordinates,
         address,
-        imageUrl:'https://www.14ers.com/photos/graystorreys/routes/rt_torr5.jpg',
+        imageUrl: req.file.path,
         creator
     });
   
@@ -162,7 +162,7 @@ const deletePlace =async (req,res,next)=>{
     const error = new HttpError('Could not find place for this id.', 404);
     return next(error);
   }
-
+  const imagePath =  place.image;
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();

@@ -105,7 +105,7 @@ const Auth = props => {
       <h2>Login Required</h2>
       <hr />
       <form onSubmit={authSubmitHandler}>
-      {!isLogin && <ImageUpload id = "image" center = "center" onInput = {inputHandler} />}
+      {!isLogin && <ImageUpload id = "image" center = "center" onInput = {inputHandler} errorText = "Please provide an image." />}
       {!isLogin && (<Input element="input" id="name" type="text" label="Your Name" validators={[VALIDATOR_REQUIRE()]} errorText="Please enter a name." onInput={inputHandler} />)}
         <Input element="input" id="email" type="email" label="E-Mail" validators={[VALIDATOR_EMAIL()]} errorText="Please enter a valid email address."onInput={inputHandler}/>
         <Input element="input" id="password" type="password" label="Password" validators={[VALIDATOR_MINLENGTH(5)]} errorText="Please enter a valid password." onInput={inputHandler} />
