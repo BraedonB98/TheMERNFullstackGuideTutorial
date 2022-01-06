@@ -1,4 +1,3 @@
-//!if you select upload image after already selecting image and you dont reselect image it crashes because it cant find path
 const fs = require('fs');
 const mongoose = require('mongoose');
 const {validationResult} = require('express-validator');
@@ -62,6 +61,13 @@ const createPlace = async (req, res, next) => {
         return(next(error));
     }
     
+    //I added this to check if the req file is there, I had an issue where if a user uploads a place
+    //then the user clicks upload place again but clicks cancel it lets them submit it without an image attached
+    //to request. Then crashes back end when req.file.path is called in created place without try catch
+    try{req.file.path}
+    catch
+    {return(next(new HttpError('image selection seems to have failed please try to upload image agin')));}
+
     const createdPlace = new Place({
         title,
         description,
@@ -70,7 +76,7 @@ const createPlace = async (req, res, next) => {
         imageUrl: req.file.path,
         creator
     });
-  
+   
     let user;
 
     try{
